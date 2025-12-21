@@ -53,6 +53,15 @@ export default function AdminPage() {
     setLoading(false)
   }
 
+  // --- KATEGORİ SİLME ---
+  async function deleteCategory(id: number) {
+    if (confirm("DİKKAT: Bu kategoriyi silerseniz içindeki TÜM ÜRÜNLER de silinecektir. Onaylıyor musunuz?")) {
+      const { error } = await supabase.from('categories').delete().eq('id', id)
+      if (!error) fetchData()
+      else alert("Silme hatası: " + error.message)
+    }
+  }
+
   // --- ÜRÜN SİLME ---
   async function deleteProduct(id: number) {
     if (confirm("Bu ürünü silmek istediğinize emin misiniz?")) {
@@ -82,14 +91,14 @@ export default function AdminPage() {
       name: prodName, 
       price: parseFloat(prodPrice), 
       description: prodDesc,
-      category_id: parseInt(selectedCat), // Sayısal ID için parseInt eklendi
+      category_id: parseInt(selectedCat),
       image_url: imageUrl, 
       is_campaign: isCampaign
     }])
 
     if (!error) {
       setProdName(''); setProdPrice(''); setProdDesc(''); setIsCampaign(false); fetchData();
-      alert("Ürün başarıyla menüye eklendi!")
+      alert("Ürün başarıyla eklendi!")
     } else {
       alert("Ürün eklenemedi: " + error.message)
     }
@@ -109,16 +118,27 @@ export default function AdminPage() {
 
         <div className="grid lg:grid-cols-3 gap-8">
           
-          {/* SOL KOLON: KATEGORİ VE ÜRÜN EKLEME */}
           <div className="lg:col-span-1 space-y-6">
             
-            {/* KATEGORİ EKLE */}
+            {/* KATEGORİ YÖNETİMİ (SİLME DAHİL) */}
             <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
               <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Kategori Yönetimi</h2>
-              <form onSubmit={addCategory} className="flex gap-2">
-                <input type="text" placeholder="Örn: Kebaplar" value={catName} onChange={(e) => setCatName(e.target.value)} className="flex-1 p-3 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 text-sm" />
+              <form onSubmit={addCategory} className="flex gap-2 mb-6">
+                <input type="text" placeholder="Yeni Kategori..." value={catName} onChange={(e) => setCatName(e.target.value)} className="flex-1 p-3 bg-gray-50 rounded-xl outline-none text-sm border-none" />
                 <button type="submit" className="bg-orange-600 text-white px-4 py-3 rounded-xl font-bold text-xs uppercase">EKLE</button>
               </form>
+
+              {/* MEVCUT KATEGORİLER LİSTESİ */}
+              <div className="space-y-2">
+                {categories.map(c => (
+                  <div key={c.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl group hover:bg-orange-50 transition">
+                    <span className="text-sm font-bold text-gray-700">{c.name}</span>
+                    <button onClick={() => deleteCategory(c.id)} className="text-red-400 hover:text-red-600 transition p-1">
+                      <span className="text-xs font-black">SİL ×</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* ÜRÜN EKLE */}
@@ -149,7 +169,7 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* SAĞ KOLON: MENÜ LİSTESİ */}
+          {/* SAĞ KOLON: ÜRÜN LİSTESİ */}
           <div className="lg:col-span-2 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
             <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6">Aktif Menü Akışı</h2>
             <div className="grid gap-4 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
@@ -172,7 +192,6 @@ export default function AdminPage() {
                   </div>
                 </div>
               ))}
-              {products.length === 0 && <p className="text-center text-gray-300 py-10 font-bold uppercase text-xs">Menüde henüz ürün yok.</p>}
             </div>
           </div>
 
