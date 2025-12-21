@@ -33,7 +33,7 @@ export default function Home() {
       <header className="bg-orange-600 text-white py-12 text-center shadow-lg rounded-b-[3rem]">
         <h1 className="text-4xl font-black uppercase tracking-widest">Bahçe Kafe</h1>
         <div className="w-20 h-1 bg-white mx-auto mt-2 rounded-full"></div>
-        <p className="mt-3 opacity-90 font-medium italic">Lezzetin QR Hali</p>
+        <p className="mt-3 opacity-90 font-medium italic">bahçe kokoreç afiyet olsun</p>
       </header>
 
       <main className="max-w-md mx-auto px-4 -mt-8">
