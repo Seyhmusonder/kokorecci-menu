@@ -1,202 +1,171 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useEffect, useState, memo, useMemo } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence, Variants } from 'framer-motion' 
+import { ChevronDown, UtensilsCrossed, Phone, Clock } from 'lucide-react' 
 
-export default function AdminPage() {
-  const router = useRouter()
-  const [isAuthorized, setIsAuthorized] = useState(false)
+// --- 1. MODERN ANİMASYON VARYANTLARI ---
+const containerVariants: Variants = {
+  open: {
+    height: "auto",
+    opacity: 1,
+    transition: { type: "spring", stiffness: 100, damping: 20, staggerChildren: 0.1, delayChildren: 0.2 }
+  },
+  collapsed: {
+    height: 0,
+    opacity: 0,
+    transition: { type: "spring", stiffness: 200, damping: 30 }
+  }
+}
+
+const itemVariants: Variants = {
+  open: { y: 0, opacity: 1, scale: 1 },
+  collapsed: { y: 20, opacity: 0, scale: 0.95 }
+}
+
+const ProductCard = memo(({ item }: { item: any }) => (
+  <motion.div 
+    variants={itemVariants}
+    className="bg-white/10 backdrop-blur-xl p-4 rounded-2xl shadow-sm flex items-center gap-4 border border-white/20 transition-all hover:bg-white/20"
+  >
+    <div className="w-16 h-16 bg-white/10 rounded-xl overflow-hidden shrink-0 border border-white/10">
+      {item.image_url && (
+        <img src={item.image_url} alt={item.name} loading="lazy" className="w-full h-full object-cover" />
+      )}
+    </div>
+    <div className="flex-1">
+      <h4 className="font-bold text-white text-sm tracking-tight">{item.name}</h4>
+      <p className="text-[10px] text-white/60 line-clamp-1 italic">{item.description || 'Bahçe Cafe lezzeti...'}</p>
+      <div className="mt-1">
+        <span className="text-orange-400 font-black text-sm">{item.price} TL</span>
+      </div>
+    </div>
+  </motion.div>
+))
+
+ProductCard.displayName = 'ProductCard'
+
+export default function Home() {
+  const [menu, setMenu] = useState<any[]>([])
   const [categories, setCategories] = useState<any[]>([])
-  const [products, setProducts] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
-  
-  // Form State'leri
-  const [catName, setCatName] = useState('')
-  const [prodName, setProdName] = useState('')
-  const [prodPrice, setProdPrice] = useState('')
-  const [prodDesc, setProdDesc] = useState('')
-  const [selectedCat, setSelectedCat] = useState('')
-  const [isCampaign, setIsCampaign] = useState(false)
-  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [openCategoryId, setOpenCategoryId] = useState<string | null>(null)
 
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        router.replace('/login')
-      } else {
-        setIsAuthorized(true)
-        fetchData()
+    async function fetchData() {
+      try {
+        const { data: catData } = await supabase.from('categories').select('*').order('name')
+        const { data: prodData } = await supabase.from('products').select('*')
+        if (catData) setCategories(catData)
+        if (prodData) setMenu(prodData)
+      } finally {
+        setLoading(false)
       }
     }
-    checkUser()
-  }, [router])
+    fetchData()
+  }, [])
 
-  async function fetchData() {
-    const { data: catData } = await supabase.from('categories').select('*').order('name')
-    const { data: prodData } = await supabase.from('products').select('*, categories(name)').order('created_at', { ascending: false })
-    if (catData) setCategories(catData)
-    if (prodData) setProducts(prodData)
-  }
+  const campaigns = useMemo(() => menu.filter(p => p.is_campaign === true), [menu])
 
-  // --- KATEGORİ EKLEME ---
-  async function addCategory(e: React.FormEvent) {
-    e.preventDefault()
-    if (!catName) return
-    setLoading(true)
-    const { error } = await supabase.from('categories').insert([{ name: catName }])
-    if (!error) {
-      setCatName(''); fetchData(); alert("Kategori eklendi!");
-    } else {
-      alert("Hata: " + error.message)
-    }
-    setLoading(false)
-  }
-
-  // --- KATEGORİ SİLME ---
-  async function deleteCategory(id: number) {
-    if (confirm("DİKKAT: Bu kategoriyi silerseniz içindeki TÜM ÜRÜNLER de silinecektir. Onaylıyor musunuz?")) {
-      const { error } = await supabase.from('categories').delete().eq('id', id)
-      if (!error) fetchData()
-      else alert("Silme hatası: " + error.message)
-    }
-  }
-
-  // --- ÜRÜN SİLME ---
-  async function deleteProduct(id: number) {
-    if (confirm("Bu ürünü silmek istediğinize emin misiniz?")) {
-      const { error } = await supabase.from('products').delete().eq('id', id)
-      if (!error) fetchData()
-    }
-  }
-
-  // --- ÜRÜN EKLEME ---
-  async function addProduct(e: React.FormEvent) {
-    e.preventDefault()
-    if (!selectedCat) return alert("Lütfen bir kategori seçin!")
-    
-    setLoading(true)
-    let imageUrl = ""
-
-    if (imageFile) {
-      const fileName = `${Math.random()}.${imageFile.name.split('.').pop()}`
-      const { error: uploadError } = await supabase.storage.from('product-images').upload(fileName, imageFile)
-      if (!uploadError) {
-        const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(fileName)
-        imageUrl = publicUrl
-      }
-    }
-
-    const { error } = await supabase.from('products').insert([{
-      name: prodName, 
-      price: parseFloat(prodPrice), 
-      description: prodDesc,
-      category_id: parseInt(selectedCat),
-      image_url: imageUrl, 
-      is_campaign: isCampaign
-    }])
-
-    if (!error) {
-      setProdName(''); setProdPrice(''); setProdDesc(''); setIsCampaign(false); fetchData();
-      alert("Ürün başarıyla eklendi!")
-    } else {
-      alert("Ürün eklenemedi: " + error.message)
-    }
-    setLoading(false)
-  }
-
-  if (!isAuthorized) return <div className="p-10 text-center font-bold">Yetki Kontrol Ediliyor...</div>
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-orange-600">
+      <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-white"></div>
+    </div>
+  )
 
   return (
-    <div className="p-4 md:p-10 bg-gray-50 min-h-screen text-black font-sans">
-      <div className="max-w-6xl mx-auto">
+    // FOTOĞRAF BURADA: Fixed background ve dark overlay ile okunabilirlik sağlandı
+    <div className="relative min-h-screen font-sans overflow-x-hidden bg-black">
+      
+      {/* ARKA PLAN FOTOĞRAFI */}
+      <div className="fixed inset-0 z-0">
+        <div className="absolute inset-0 bg-black/50 z-10"></div> {/* Fotoğrafın üzerindeki koyu katman */}
+        <img src="/istanbul-bg.jpg" className="w-full h-full object-cover" alt="Background" />
+      </div>
+      
+      {/* HEADER: Glassmorphism efektli turuncu başlık */}
+      <header className="bg-orange-600/80 backdrop-blur-lg pt-12 pb-14 px-6 text-center shadow-2xl sticky top-0 z-[100] border-b border-white/10">
+        <h1 className="text-white text-2xl font-black tracking-tighter italic uppercase flex items-center justify-center gap-2 drop-shadow-lg">
+          <UtensilsCrossed size={22} className="text-orange-200" /> BAHÇE CAFE KOKOREÇ
+        </h1>
+        <div className="w-10 h-0.5 bg-white/40 mx-auto mt-2 rounded-full"></div>
+      </header>
+
+      <main className="max-w-md mx-auto px-4 pt-10 pb-24 relative z-20">
         
-        <div className="flex justify-between items-center mb-10">
-          <h1 className="text-2xl font-black text-orange-600 tracking-tighter uppercase">Bahçe Kafe Admin</h1>
-          <button onClick={() => supabase.auth.signOut().then(() => router.push('/login'))} className="text-xs font-bold bg-white border border-red-100 text-red-500 px-4 py-2 rounded-xl">ÇIKIŞ YAP</button>
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-8">
-          
-          <div className="lg:col-span-1 space-y-6">
-            
-            {/* KATEGORİ YÖNETİMİ (SİLME DAHİL) */}
-            <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
-              <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Kategori Yönetimi</h2>
-              <form onSubmit={addCategory} className="flex gap-2 mb-6">
-                <input type="text" placeholder="Yeni Kategori..." value={catName} onChange={(e) => setCatName(e.target.value)} className="flex-1 p-3 bg-gray-50 rounded-xl outline-none text-sm border-none" />
-                <button type="submit" className="bg-orange-600 text-white px-4 py-3 rounded-xl font-bold text-xs uppercase">EKLE</button>
-              </form>
-
-              {/* MEVCUT KATEGORİLER LİSTESİ */}
-              <div className="space-y-2">
-                {categories.map(c => (
-                  <div key={c.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl group hover:bg-orange-50 transition">
-                    <span className="text-sm font-bold text-gray-700">{c.name}</span>
-                    <button onClick={() => deleteCategory(c.id)} className="text-red-400 hover:text-red-600 transition p-1">
-                      <span className="text-xs font-black">SİL ×</span>
-                    </button>
+        {/* KAMPANYALAR: Şeffaf Kart Tasarımı */}
+        {campaigns.length > 0 && (
+          <section className="mb-12">
+            <h2 className="text-xs font-black text-orange-400 mb-4 px-2 uppercase tracking-[0.3em] drop-shadow-md">Fırsatlar</h2>
+            <div className="flex overflow-x-auto gap-4 pb-4 no-scrollbar snap-x">
+              {campaigns.map((item) => (
+                <div key={item.id} className="snap-center min-w-[280px] bg-white/10 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/20 overflow-hidden">
+                  <div className="h-40 relative">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    {item.image_url && <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />}
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* ÜRÜN EKLE */}
-            <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
-              <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Yeni Ürün Ekle</h2>
-              <form onSubmit={addProduct} className="space-y-3">
-                <select value={selectedCat} onChange={(e) => setSelectedCat(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl outline-none text-sm border-none">
-                  <option value="">Kategori Seçin...</option>
-                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-                <input type="text" placeholder="Ürün Adı" value={prodName} onChange={(e) => setProdName(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl outline-none text-sm border-none" required />
-                <input type="number" placeholder="Fiyat (TL)" value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl outline-none text-sm border-none" required />
-                <textarea placeholder="Açıklama" value={prodDesc} onChange={(e) => setProdDesc(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl outline-none text-sm border-none h-20" />
-                
-                <label className="flex items-center gap-2 p-3 bg-orange-50 rounded-xl cursor-pointer">
-                  <input type="checkbox" checked={isCampaign} onChange={(e) => setIsCampaign(e.target.checked)} className="accent-orange-600 w-4 h-4" />
-                  <span className="text-[10px] font-bold text-orange-800 uppercase tracking-tighter">Kampanya Vitrinine Ekle</span>
-                </label>
-
-                <div className="p-3 border-2 border-dashed border-gray-100 rounded-xl">
-                  <input type="file" onChange={(e) => setImageFile(e.target.files ? e.target.files[0] : null)} className="text-[10px] text-gray-400 w-full" />
-                </div>
-
-                <button disabled={loading} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-orange-600 transition shadow-lg">
-                  {loading ? 'İŞLENİYOR...' : 'SİSTEME KAYDET'}
-                </button>
-              </form>
-            </div>
-          </div>
-
-          {/* SAĞ KOLON: ÜRÜN LİSTESİ */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
-            <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6">Aktif Menü Akışı</h2>
-            <div className="grid gap-4 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
-              {products.map(p => (
-                <div key={p.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-transparent hover:border-orange-100 transition group">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-white rounded-xl overflow-hidden shadow-sm shrink-0">
-                      {p.image_url && <img src={p.image_url} className="w-full h-full object-cover" />}
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm text-slate-800">{p.name}</p>
-                      <p className="text-[10px] text-orange-500 font-bold uppercase tracking-widest">{p.categories?.name}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <p className="font-black text-slate-900 text-sm">{p.price} TL</p>
-                    <button onClick={() => deleteProduct(p.id)} className="bg-white p-2.5 rounded-xl text-red-500 hover:bg-red-500 hover:text-white transition shadow-sm border border-red-50">
-                      🗑️
-                    </button>
+                  <div className="p-5 flex justify-between items-center bg-black/20 text-white">
+                    <span className="font-bold tracking-tight">{item.name}</span>
+                    <span className="text-orange-400 font-black">{item.price} TL</span>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
+          </section>
+        )}
 
+        {/* MENÜ KATEGORİLERİ: Çekmece Sistemi */}
+        <div className="space-y-5">
+          <h2 className="text-xs font-black text-orange-400 mb-2 px-2 uppercase tracking-[0.3em] drop-shadow-md">Menü</h2>
+          {categories.map((cat) => (
+            <div key={cat.id} className="bg-white/10 backdrop-blur-2xl rounded-[1.8rem] border border-white/10 overflow-hidden shadow-lg">
+              
+              <button 
+                onClick={() => setOpenCategoryId(openCategoryId === cat.id ? null : cat.id)}
+                className="w-full p-6 flex justify-between items-center active:bg-white/10 transition-colors"
+              >
+                <span className="text-[15px] font-black text-white uppercase italic tracking-wider">
+                  {cat.name}
+                </span>
+                <motion.div 
+                    animate={{ rotate: openCategoryId === cat.id ? 180 : 0 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                >
+                    <ChevronDown className="text-orange-400" size={22} />
+                </motion.div>
+              </button>
+
+              <AnimatePresence>
+                {openCategoryId === cat.id && (
+                  <motion.div
+                    key="content"
+                    variants={containerVariants}
+                    initial="collapsed"
+                    animate="open"
+                    exit="collapsed"
+                    className="overflow-hidden"
+                  >
+                    <div className="p-4 space-y-4 bg-white/5 border-t border-white/5">
+                      {menu
+                        .filter(item => item.category_id === cat.id)
+                        .map((item) => <ProductCard key={item.id} item={item} />)
+                      }
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
         </div>
-      </div>
+      </main>
+
+      {/* FOOTER */}
+      <footer className="relative z-20 text-center py-12 text-white/30 text-[10px] font-black tracking-[0.4em] uppercase">
+        <div className="flex justify-center gap-6 mb-4">
+          <Phone size={14} /> <Clock size={14} />
+        </div>
+        Bahçe Cafe Kokoreç • Erzincan
+      </footer>
     </div>
   )
 }
