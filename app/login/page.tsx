@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-// useRouter'ı silebilirsin çünkü window.location kullanacağız, ama hata vermesin diye tutabiliriz.
+import Image from 'next/image' // 📸 Logoyu göstermek için bunu ekledik
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -26,8 +26,7 @@ export default function LoginPage() {
         return
       }
 
-      // 2. KRİTİK NOKTA: router.push yerine tam sayfa yenileme yapıyoruz.
-      // Bu sayede çerezler (cookies) tarayıcıya oturur ve Middleware girişi onaylar.
+      // 2. Sayfayı tam yenileyerek admin paneline gidiyoruz (Cookie oturması için şart)
       window.location.href = '/admin'
 
     } catch (err) {
@@ -40,9 +39,16 @@ export default function LoginPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-stone-100 p-4 font-sans">
       <div className="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-sm border border-stone-200">
+        
+        {/* 🔥 LOGO ALANI BURAYA GELDİ */}
         <header className="text-center mb-8">
-          <div className="bg-orange-100 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
-             <span className="text-3xl">🍔</span>
+          <div className="w-28 h-28 relative mx-auto mb-6 rounded-full overflow-hidden shadow-lg border-4 border-orange-50">
+             <Image 
+               src="/logo.png" // public klasöründeki fotoğraf
+               alt="Bahçe Cafe Logo" 
+               fill 
+               className="object-cover" // Fotoğrafı yuvarlağın içine tam oturtur
+             />
           </div>
           <h1 className="text-3xl font-black text-orange-600 tracking-tighter">BAHÇE KAFE</h1>
           <p className="text-gray-400 text-xs mt-2 uppercase font-bold tracking-widest">Yönetim Paneli</p>

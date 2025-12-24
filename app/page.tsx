@@ -1,12 +1,11 @@
 'use client'
 import { useEffect, useState, memo, useMemo } from 'react'
-import Image from 'next/image' // Next.js optimizasyonu için şart
+import Image from 'next/image'
 import { supabase } from '@/lib/supabaseClient'
 import { motion, AnimatePresence, Variants } from 'framer-motion' 
 import { ChevronDown, UtensilsCrossed } from 'lucide-react' 
 
-// --- 1. PERFORMANS ODAKLI ANİMASYONLAR ---
-// Spring yerine daha hafif olan 'tween' veya optimize edilmiş spring kullanıyoruz.
+// --- ANİMASYON AYARLARI ---
 const containerVariants: Variants = {
   open: {
     height: "auto",
@@ -66,8 +65,14 @@ export default function Home() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const { data: catData } = await supabase.from('categories').select('*').order('name')
+        // Admin panelindeki sıraya göre çekiyoruz
+        const { data: catData } = await supabase
+          .from('categories')
+          .select('*')
+          .order('order_index', { ascending: true }) 
+        
         const { data: prodData } = await supabase.from('products').select('*')
+        
         if (catData) setCategories(catData)
         if (prodData) setMenu(prodData)
       } finally {
@@ -88,40 +93,61 @@ export default function Home() {
   return (
     <div className="relative min-h-screen font-sans bg-black">
       
-      {/* 1. ARKA PLAN: next/image ile %80 daha hafif */}
+      {/* BACKGROUND */}
       <div className="fixed inset-0 z-0">
         <div className="absolute inset-0 bg-black/60 z-10 pointer-events-none"></div>
         <Image 
           src="/istanbul-bg.jpg" 
           alt="İstanbul Background" 
           fill 
-          priority // İlk yüklemede hız kazandırır
-          quality={75} // Boyutu küçültmek için kaliteyi 75'e çektik
+          priority 
+          quality={75} 
           className="object-cover opacity-80"
         />
       </div>
       
-      {/* 2. HEADER: Basitleştirilmiş blur */}
-      <header className="bg-orange-600/90 backdrop-blur-md pt-10 pb-12 px-6 text-center shadow-xl sticky top-0 z-[100] border-b border-white/10">
-        <h1 className="text-white text-2xl font-black italic uppercase flex items-center justify-center gap-2">
-           BAHÇE CAFE KOKOREÇ
-        </h1>
+      {/* HEADER: DÜZELTİLDİ - Logo Büyüdü ve Harfler Kesilmiyor */}
+      <header className="bg-orange-600/95 backdrop-blur-md py-4 px-6 shadow-2xl sticky top-0 z-[100] border-b border-white/10">
+        <div className="max-w-md mx-auto flex items-center gap-4">
+            
+            {/* LOGO KISMI: Boyut w-20 h-20 yaptık (Büyüdü) */}
+            <div className="relative w-20 h-20 shrink-0 rounded-2xl overflow-hidden border-2 border-white/30 shadow-lg bg-white p-1">
+                <Image 
+                  src="/logo.png" 
+                  alt="Logo" 
+                  fill 
+                  // BURASI ÇOK ÖNEMLİ: 'object-contain' yaptık ki harfler kesilmesin, kutuya sığsın.
+                  className="object-contain"
+                />
+            </div>
+
+            {/* BAŞLIK */}
+            <div className="flex flex-col">
+                <h1 className="text-white text-2xl font-black italic uppercase tracking-tight leading-none drop-shadow-md">
+                    BAHÇE CAFE KOKOREÇ
+                </h1>
+                <span className="text-orange-200 text-sm font-bold tracking-widest uppercase mt-1">
+                    KOKOREÇ
+                </span>
+            </div>
+
+        </div>
       </header>
 
-      <main className="max-w-md mx-auto px-4 pt-8 pb-24 relative z-20">
+      <main className="max-w-md mx-auto px-4 pt-6 pb-24 relative z-20">
         
         {/* KAMPANYALAR */}
         {campaigns.length > 0 && (
-          <section className="mb-10">
-            <h2 className="text-xs font-black text-orange-400 mb-4 px-2 uppercase tracking-widest">Günün Fırsatları</h2>
+          <section className="mb-8">
+            <h2 className="text-[10px] font-black text-orange-400 mb-3 px-1 uppercase tracking-[0.2em]">Günün Fırsatları</h2>
             <div className="flex overflow-x-auto gap-4 pb-4 no-scrollbar">
               {campaigns.map((item) => (
-                <div key={item.id} className="min-w-[280px] bg-white/10 backdrop-blur-md rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl">
-                  <div className="relative h-40">
+                <div key={item.id} className="min-w-[260px] bg-white/10 backdrop-blur-md rounded-[2rem] border border-white/10 overflow-hidden shadow-2xl">
+                  <div className="relative h-36">
                     {item.image_url && <Image src={item.image_url} alt={item.name} fill className="object-cover" />}
                   </div>
-                  <div className="p-5 flex justify-between items-center text-white">
-                    <span className="font-bold">{item.name}</span>
+                  <div className="p-4 flex justify-between items-center text-white">
+                    <span className="font-bold text-sm">{item.name}</span>
                     <span className="text-orange-400 font-black">{item.price} TL</span>
                   </div>
                 </div>
@@ -130,9 +156,9 @@ export default function Home() {
           </section>
         )}
 
-        {/* MENÜ: Optimize Edilmiş Çekmeceler */}
-        <div className="space-y-4">
-          <h2 className="text-xs font-black text-orange-400 mb-2 px-2 uppercase tracking-widest">Menü Kategorileri</h2>
+        {/* MENÜ LİSTESİ */}
+        <div className="space-y-3">
+          <h2 className="text-[10px] font-black text-orange-400 mb-2 px-1 uppercase tracking-[0.2em]">Menü</h2>
           {categories.map((cat) => (
             <div key={cat.id} className="bg-white/5 backdrop-blur-sm rounded-[1.5rem] border border-white/10 overflow-hidden">
               
@@ -171,8 +197,21 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="relative z-20 text-center py-10 text-white/20 text-[10px] font-black tracking-widest">
-        BAHÇE CAFE KOKOREÇ • ERZİNCAN
+   {/* MEVCUT FOOTER KISMINI BUNUNLA DEĞİŞTİR */}
+      <footer className="relative z-20 text-center py-10 space-y-2 border-t border-white/5 mt-8 bg-black/40 backdrop-blur-sm">
+        <p className="text-white/40 text-[10px] font-bold tracking-widest">
+          BAHÇE CAFE KOKOREÇ • ERZİNCAN
+        </p>
+        
+        {/* EVALORA İMZASI */}
+        <div className="flex items-center justify-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity cursor-default">
+          <span className="text-[8px] text-white/30 uppercase tracking-[0.15em] font-medium">
+            Powered by
+          </span>
+          <span className="text-[9px] font-black text-orange-500 uppercase tracking-[0.25em] drop-shadow-sm">
+            EVALORA
+          </span>
+        </div>
       </footer>
     </div>
   )
