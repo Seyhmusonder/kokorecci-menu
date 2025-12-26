@@ -106,29 +106,34 @@ export default function Home() {
         />
       </div>
       
-      {/* HEADER: DÜZELTİLDİ - Logo Büyüdü ve Harfler Kesilmiyor */}
-      <header className="bg-orange-600/95 backdrop-blur-md py-4 px-6 shadow-2xl sticky top-0 z-[100] border-b border-white/10">
-        <div className="max-w-md mx-auto flex items-center gap-4">
+      {/* HEADER: GÜNCELLENDİ - Taklit Uyarısı ve %100 Kuzu Rozeti */}
+      <header className="bg-orange-600/95 backdrop-blur-md py-4 px-4 shadow-2xl sticky top-0 z-[100] border-b border-white/10 overflow-hidden">
+        <div className="max-w-md mx-auto flex items-center gap-3 relative">
             
-            {/* LOGO KISMI: Boyut w-20 h-20 yaptık (Büyüdü) */}
+            {/* LOGO */}
             <div className="relative w-20 h-20 shrink-0 rounded-2xl overflow-hidden border-2 border-white/30 shadow-lg bg-white p-1">
                 <Image 
                   src="/logo.png" 
                   alt="Logo" 
                   fill 
-                  // BURASI ÇOK ÖNEMLİ: 'object-contain' yaptık ki harfler kesilmesin, kutuya sığsın.
                   className="object-contain"
                 />
             </div>
 
-            {/* BAŞLIK */}
-            <div className="flex flex-col">
-                <h1 className="text-white text-2xl font-black italic uppercase tracking-tight leading-none drop-shadow-md">
+            {/* BAŞLIK VE UYARI YAZISI */}
+            <div className="flex flex-col z-10">
+                <h1 className="text-white text-xl font-black italic uppercase tracking-tight leading-none drop-shadow-md pr-12">
                     BAHÇE CAFE KOKOREÇ
                 </h1>
-                <span className="text-orange-200 text-sm font-bold tracking-widest uppercase mt-1">
-                    KOKOREÇ
+                {/* BURASI DEĞİŞTİ: Taklitlerimizden Kaçının */}
+                <span className="text-orange-200 text-[10px] font-bold tracking-widest uppercase mt-1.5 italic bg-black/20 px-2 py-0.5 rounded w-fit">
+                    Taklitlerimizden Kaçının
                 </span>
+            </div>
+
+            {/* 🔥 YENİ TASARIM: %100 KUZU MÜHRÜ (Sağ Üst) */}
+            <div className="absolute -right-2 top-1/2 -translate-y-1/2 bg-red-600 text-white text-[9px] font-black py-2 px-2 rounded-lg -rotate-12 shadow-xl border-2 border-white/80 text-center leading-none z-20 animate-pulse">
+               %100<br/>KUZU<br/>KOKOREÇ
             </div>
 
         </div>
@@ -197,13 +202,12 @@ export default function Home() {
         </div>
       </main>
 
-   {/* MEVCUT FOOTER KISMINI BUNUNLA DEĞİŞTİR */}
+      {/* FOOTER (Evalora İmzalı) */}
       <footer className="relative z-20 text-center py-10 space-y-2 border-t border-white/5 mt-8 bg-black/40 backdrop-blur-sm">
         <p className="text-white/40 text-[10px] font-bold tracking-widest">
           BAHÇE CAFE KOKOREÇ • ERZİNCAN
         </p>
         
-        {/* EVALORA İMZASI */}
         <div className="flex items-center justify-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity cursor-default">
           <span className="text-[8px] text-white/30 uppercase tracking-[0.15em] font-medium">
             Powered by
