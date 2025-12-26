@@ -105,7 +105,7 @@ export default function Home() {
         />
       </div>
       
-      {/* HEADER: GÜNCELLENDİ (Mühür Kaydırıldı) */}
+      {/* HEADER DÜZELTİLDİ: Taşma Yok, Tam Sağ Alt Köşede */}
       <header className="bg-orange-600/95 backdrop-blur-md py-4 px-4 shadow-2xl sticky top-0 z-[100] border-b border-white/10 overflow-hidden">
         <div className="max-w-md mx-auto flex items-center gap-3 relative">
             
@@ -120,12 +120,11 @@ export default function Home() {
             </div>
 
             {/* BAŞLIK VE UYARI YAZISI */}
-            <div className="flex flex-col z-10">
-                {/* DİKKAT: pr-20 ekledim. Bu "Padding Right 20 birim" demek. 
-                   Yani yazının sağ tarafında boşluk bırakır, böylece yazı mühüre çarpmaz, 
-                   erkenden alt satıra geçer.
+            <div className="flex flex-col z-10 w-full"> 
+                {/* DİKKAT: pr-16 verdik. 
+                   Bu, yazının mühürün üzerine binmesini engeller.
                 */}
-                <h1 className="text-white text-xl font-black italic uppercase tracking-tight leading-none drop-shadow-md pr-20">
+                <h1 className="text-white text-xl font-black italic uppercase tracking-tight leading-none drop-shadow-md pr-16">
                     BAHÇE CAFE KOKOREÇ
                 </h1>
                 
@@ -134,11 +133,12 @@ export default function Home() {
                 </span>
             </div>
 
-            {/* 🔥 GÜNCEL AYAR: 
-               -right-4 -> Daha sağa gitti.
-               top-[65%] -> Aşağı indi.
+            {/* 🔥 FİNAL AYAR: 
+               right-0 -> Ekranın tam sağ kenarına (padding içinden) yasla.
+               top-[55%] -> Dikeyde tam ortanın bir tık altına al.
+               z-20 -> Her şeyin üstünde olsun.
             */}
-            <div className="absolute -right-4 top-[65%] -translate-y-1/2 bg-red-600 text-white text-[9px] font-black py-2 px-2 rounded-lg -rotate-12 shadow-xl border-2 border-white/80 text-center leading-none z-20 animate-pulse">
+            <div className="absolute right-0 top-[55%] -translate-y-1/2 bg-red-600 text-white text-[9px] font-black py-2 px-2 rounded-lg -rotate-12 shadow-xl border-2 border-white/80 text-center leading-none z-20 animate-pulse">
                %100<br/>KUZU<br/>KOKOREÇ
             </div>
 
